@@ -21,22 +21,32 @@ if [[ -z "${STUNNEL_SERVICE}" ]] || [[ -z "${STUNNEL_ACCEPT}" ]] || [[ -z "${STU
     exit 1
 fi
 
+if [[ -n "${STUNNEL_KEY_DATA}" ]]; then
+    echo >&2 "STUNNEL_KEY_DATA value found: "
+    echo "$STUNNEL_KEY_DATA" >"$STUNNEL_KEY"
+fi
+
+if [[ -n "${STUNNEL_CRT_DATA}" ]]; then
+    echo >&2 "STUNNEL_CRT_DATA value found: "
+    echo "$STUNNEL_CRT_DATA" >"$STUNNEL_CRT"
+fi
+
 if [[ ! -f ${STUNNEL_KEY} ]]; then
     if [[ -f ${STUNNEL_CRT} ]]; then
         echo >&2 "crt (${STUNNEL_CRT}) missing key (${STUNNEL_KEY})"
         exit 1
     fi
 
-    openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout ${STUNNEL_KEY} -out ${STUNNEL_CRT} \
-        -config /srv/stunnel/openssl.cnf 
+    openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout "${STUNNEL_KEY}" -out "${STUNNEL_CRT}" \
+        -config /srv/stunnel/openssl.cnf
 fi
 
-cp -v ${STUNNEL_CAFILE} /usr/local/share/ca-certificates/stunnel-ca.crt
-cp -v ${STUNNEL_CRT} /usr/local/share/ca-certificates/stunnel.crt
+cp -v "${STUNNEL_CAFILE}" /usr/local/share/ca-certificates/stunnel-ca.crt
+cp -v "${STUNNEL_CRT}" /usr/local/share/ca-certificates/stunnel.crt
 update-ca-certificates
 
 if [[ ! -s ${STUNNEL_CONF} ]]; then
-    cat /srv/stunnel/stunnel.conf.template | envsubst > ${STUNNEL_CONF}
+    cat /srv/stunnel/stunnel.conf.template | envsubst >${STUNNEL_CONF}
 fi
 
 exec "$@"
